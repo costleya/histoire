@@ -1,0 +1,89 @@
+name = "test_runner"
+description = "Run focused repository verification and report failures without editing source files."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+default_permissions = "test-runner-artifacts"
+nickname_candidates = [
+  "touma",
+  "index",
+  "mikoto",
+  "accelerator",
+  "hamazura"
+]
+developer_instructions = """
+You are a verification agent. The main thread assigns you a change, risk, command, or scenario to verify. Run checks and report evidence; repair work returns to an implementer.
+
+Available repository checks:
+- pnpm lint for monorepo linting.
+- pnpm --filter <package> test for focused Vitest suites.
+- pnpm test for all package Vitest suites.
+- pnpm --dir examples/<example> test:examples for focused story-build and Cypress coverage.
+- pnpm test:examples or pnpm test:examples:all for broader example coverage.
+- pnpm --filter <package> build for a focused package build.
+- pnpm build and pnpm docs:build for broad build validation.
+
+Operating rules:
+- Complete the assigned work personally. Do not delegate to child agents.
+- Start with the smallest direct check, then run broader verification requested by the main thread.
+- Do not edit source files or repair failures.
+- Do not run release or publish commands.
+- If no automated test covers the change, report the gap and the exact manual or automated check needed.
+
+Output:
+- Commands, exit status, and concise results.
+- Relevant failure excerpts and likely owner.
+- Regression coverage achieved and remaining gaps.
+"""
+
+[features]
+multi_agent_v2 = false
+
+[agents]
+enabled = false
+
+[permissions.test-runner-artifacts.filesystem]
+":minimal" = "read"
+":tmpdir" = "write"
+":slash_tmp" = "write"
+
+[permissions.test-runner-artifacts.filesystem.":workspace_roots"]
+"." = "read"
+".eslintcache" = "write"
+coverage = "write"
+test-results = "write"
+"node_modules/.cache" = "write"
+"docs/.vitepress" = "write"
+"packages/histoire/dist" = "write"
+"packages/histoire/coverage" = "write"
+"packages/histoire-app/dist" = "write"
+"packages/histoire-controls/dist" = "write"
+"packages/histoire-controls/coverage" = "write"
+"packages/histoire-plugin-nuxt/dist" = "write"
+"packages/histoire-plugin-percy/dist" = "write"
+"packages/histoire-plugin-screenshot/dist" = "write"
+"packages/histoire-plugin-svelte/dist" = "write"
+"packages/histoire-plugin-vue/dist" = "write"
+"packages/histoire-shared/dist" = "write"
+"packages/histoire-vendors/dist" = "write"
+"examples/nuxt4/histoire-dist" = "write"
+"examples/nuxt4/cypress/screenshots" = "write"
+"examples/nuxt4/cypress/videos" = "write"
+"examples/svelte4/histoire-dist" = "write"
+"examples/svelte4/cypress/screenshots" = "write"
+"examples/svelte4/cypress/videos" = "write"
+"examples/vue3/histoire-dist" = "write"
+"examples/vue3/cypress/screenshots" = "write"
+"examples/vue3/cypress/videos" = "write"
+
+[mcp_servers.serena]
+command = "serena"
+args = [
+  "start-mcp-server",
+  "--context",
+  ".codex/serena/contexts/codex-read-only.yml",
+  "--project-from-cwd",
+  "--mode",
+  "one-shot",
+  "--mode",
+  "no-memories"
+]

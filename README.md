@@ -33,6 +33,43 @@ You can install builds from any commit on the main branch from [here](https://ni
 
 See [Contributing Guide](https://github.com/Akryum/histoire/blob/main/CONTRIBUTING.md) to learn more about the repository and how you can contribute.
 
+## Codex setup on `s-obvious`
+
+The `s-obvious` branch includes repository-local Codex configuration for Serena, GrepAI, context-mode, specialist agents, and framework skills. Use Node 22.5 or newer and the pnpm version declared in `package.json`.
+
+Install the local tooling before opening a new Codex task:
+
+```sh
+corepack enable
+uv tool install --prerelease=allow serena-agent
+brew install yoanbernabeu/tap/grepai
+npm install --global context-mode
+```
+
+Make sure `serena`, `grepai`, `context-mode`, `node`, and `pnpm` are visible on the `PATH` inherited by Codex. The tracked `.codex/config.toml` starts the three MCP servers, but Codex must be restarted after a config, hook, installation, or `PATH` change.
+
+Context-mode and pnpm need writable directories outside the repository when Codex uses a workspace-write sandbox. Merge these absolute paths into `~/.codex/config.toml` rather than redeclaring an existing table:
+
+```toml
+[sandbox_workspace_write]
+writable_roots = [
+  "/Users/YOUR_NAME/.codex/context-mode",
+  "/Users/YOUR_NAME/Library/pnpm/store",
+]
+```
+
+Do not run `context-mode upgrade` for this repository: it installs hooks in the global Codex configuration. Histoire uses only the tracked `.codex/hooks.json` lifecycle hooks.
+
+GrepAI requires the LM Studio embedding model `text-embedding-mxbai-embed-large-v1` on `http://localhost:1234`. From the repository root, initialize it with the LM Studio provider and Gob storage, confirm `.grepai/config.yaml` names that model with `dimensions: 768`, then start its watcher:
+
+```sh
+grepai init --provider lmstudio --backend gob
+grepai watch --background
+grepai status
+```
+
+The MCP process does not start LM Studio or the watcher. After a full Codex restart, verify Serena reports project `histoire`, GrepAI reports indexed repository files, and a live context-mode tool call can use storage under `~/.codex/context-mode`. Tool names appearing in Codex do not by themselves prove that these backends are healthy.
+
 ## Sponsors
 
 Become a sponsor!

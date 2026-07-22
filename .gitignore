@@ -7,3 +7,9 @@ histoire-dist/
 **/cypress/videos/
 .DS_Store
 .eslintcache
+
+# Local agent skills and indexes
+.agents/skills/
+.grepai/
+.serena/
+.pnpm-store/
