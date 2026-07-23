@@ -4,6 +4,15 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner to test
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - macos-latest
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,8 +20,13 @@ concurrency:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
-    name: Build and test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.runner == 'macos-latest' && '["macos-latest"]' || '["ubuntu-latest","macos-latest"]') }}
+
+    runs-on: ${{ matrix.os }}
+    name: Build and test (${{ matrix.os }})
 
     env:
       dir: ./examples/nuxt4
@@ -39,6 +53,7 @@ jobs:
           path: |
             ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
             ~/.cache/Cypress
+            ~/Library/Caches/Cypress
           key: pnpm-v1-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-v1-${{ runner.os }}-
@@ -60,5 +75,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-${{ matrix.os }}
           path: ${{env.dir}}/cypress/screenshots
