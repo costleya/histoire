@@ -39,7 +39,7 @@ jobs:
               wait "$dev_pid" || dev_status=$?
               exit "${dev_status:-1}"
             fi
-            if curl --fail --silent --connect-timeout 1 --max-time 1 http://127.0.0.1:6006/ >/dev/null; then
+            if curl --fail --silent --connect-timeout 1 --max-time 1 http://localhost:6006/ >/dev/null; then
               echo "story:dev became ready after ${second}s"
               exit 0
             fi
