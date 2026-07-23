@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.runner == 'macos-latest' && '["macos-latest"]' || '["ubuntu-latest","macos-latest"]') }}
+        os: ${{ fromJSON((inputs.runner == 'macos-latest' || (github.event_name == 'push' && github.ref == 'refs/heads/codex/repro-nuxt4-macos')) && '["macos-latest"]' || '["ubuntu-latest","macos-latest"]') }}
 
     runs-on: ${{ matrix.os }}
     name: Build and test (${{ matrix.os }})
