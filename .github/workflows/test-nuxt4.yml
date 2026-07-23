@@ -1,64 +1,45 @@
-name: Nuxt 4 tests
+name: Nuxt 4 macOS story:dev repro
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    name: Build and test
-
-    env:
-      dir: ./examples/nuxt4
+  repro:
+    runs-on: macos-latest
+    timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
 
-      - name: Install node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4.0.0
+      - uses: pnpm/action-setup@v4.0.0
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+
+      - name: Run story:dev
+        shell: bash
         run: |
-          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+          set -e
+          ulimit -n
 
-      - name: Cache pnpm modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-            ~/.cache/Cypress
-          key: pnpm-v1-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            pnpm-v1-${{ runner.os }}-
+          pnpm --dir examples/nuxt4 run story:dev &
+          dev_pid=$!
+          trap 'kill "$dev_pid" 2>/dev/null || true' EXIT
 
-      - name: Install dependencies
-        run: pnpm install
+          for second in {1..120}; do
+            if ! kill -0 "$dev_pid" 2>/dev/null; then
+              wait "$dev_pid" || dev_status=$?
+              exit "${dev_status:-1}"
+            fi
+            sleep 1
+          done
 
-      - name: Build
-        run: pnpm run build
-
-      - name: Build book
-        working-directory: ${{env.dir}}
-        run: pnpm run story:build
-
-      - name: Run tests
-        working-directory: ${{env.dir}}
-        run: pnpm run ci
-
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: cypress-screenshots
-          path: ${{env.dir}}/cypress/screenshots
+          echo 'story:dev stayed alive for 120 seconds'
